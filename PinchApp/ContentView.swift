@@ -13,6 +13,10 @@ struct ContentView: View {
 	@State private var isAnimating = false
 	@State private var imageScale: CGFloat = 1
 	@State private var imageOffset: CGSize = .zero
+	@State private var isDrawerOpen = false
+	@State private var pageIndex = 1
+	
+	let pages: [Page] = pagesData
 	
 	// MARK: - BODY
     var body: some View {
@@ -21,7 +25,7 @@ struct ContentView: View {
 				Color(.clear)
 					.ignoresSafeArea()
 				// MARK: - PAGE IMAGE
-				Image("magazine-front-cover")
+				Image(currentPage())
 					.resizable()
 					.aspectRatio(contentMode: .fit)
 					.cornerRadius(10)
@@ -72,21 +76,21 @@ struct ContentView: View {
 										imageScale = 5
 									}
 								}
-							}
+							} //: END OF ON CHANGED
 							.onEnded { _ in
 								if imageScale > 5 {
 									imageScale = 5
 								} else if imageScale <= 1 {
 									resetImageState()
 								}
-							}
+							} //: END OF ON ENDED
 					) //: END OF MAGNIFICATION GESTURE
 			} //: END OF ZSTACK
 			.navigationTitle("Pinch & Zoom")
 			.navigationBarTitleDisplayMode(.inline)
 			.onAppear(perform: {
 				isAnimating = true
-			})
+			}) //: END OF ON APPEAR
 			.animation(.linear(duration: 1), value: isAnimating)
 			// MARK: - INFO PANEL
 			.overlay(
@@ -94,12 +98,11 @@ struct ContentView: View {
 					.padding(.horizontal)
 					.padding(.top, 30)
 				, alignment: .top
-			)
+			) //: END OF INFO PANEL OVERLAY
 			// MARK: - CONTROLS
 			.overlay(
 				Group {
 					HStack {
-						
 						Button {
 							withAnimation(.spring()) {
 								if imageScale > 1 {
@@ -112,14 +115,12 @@ struct ContentView: View {
 						} label: {
 							ControlImageView(icon: "minus.magnifyingglass")
 						}
-						
 						// RESET
 						Button {
 							resetImageState()
 						} label: {
 							ControlImageView(icon: "arrow.up.left.and.down.right.magnifyingglass")
 						}
-						
 						// SCALE UP
 						Button {
 							withAnimation(.spring()) {
@@ -133,7 +134,7 @@ struct ContentView: View {
 						} label: {
 							ControlImageView(icon: "plus.magnifyingglass")
 						}
-					} //: END OF CONTROLS
+					} //: END OF CONTROLS HSTACK
 					.padding(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
 					.background(.ultraThinMaterial)
 					.cornerRadius(12)
@@ -141,15 +142,59 @@ struct ContentView: View {
 				}
 					.padding(.bottom, 30)
 				, alignment: .bottom
-			)
+			) //: END OF CONTROLS OVERLAY
+			// MARK: - DRAWER
+			.overlay(
+				HStack(spacing: 12) {
+					// MARK: - DRAWER HANDLE
+					Image(systemName: isDrawerOpen ? "chevron.compact.right" : "chevron.compact.left")
+						.resizable()
+						.scaledToFit()
+						.frame(height: 40)
+						.padding(8)
+						.foregroundStyle(.secondary)
+						.onTapGesture(perform: {
+							withAnimation(.easeOut) {
+								isDrawerOpen.toggle()
+							}
+						})
+					// MARK: - THUMBNAILS
+					ForEach(pages) { item in
+						Image(item.thumbnailName)
+							.resizable()
+							.scaledToFit()
+							.frame(width: 80)
+							.cornerRadius(8)
+							.shadow(radius: 4)
+							.opacity(isDrawerOpen ? 1 : 0)
+							.animation(.easeOut(duration: 0.5), value: isDrawerOpen)
+							.onTapGesture(perform: {
+								isAnimating = true
+								pageIndex = item.id
+							})
+					} //: END OF THUMBNAIL FOR EACH
+					Spacer()
+				} //: END OF DRAWER HSTACK
+					.padding(EdgeInsets(top: 16, leading: 8, bottom: 16, trailing: 8))
+					.background(.ultraThinMaterial)
+					.cornerRadius(12)
+					.opacity(isAnimating ? 1 : 0)
+					.frame(width: 260)
+					.padding(.top, UIScreen.main.bounds.height / 12)
+					.offset(x: isDrawerOpen ? 20 : 215)
+				, alignment: .topTrailing
+			) //: END OF DRAWER OVERLAY
 		} //: END OF NAVIGATION STACK
-    }
-	
+    } //: END OF BODY
+	// MARK: - FUNCTIONS
 	func resetImageState() {
 		return withAnimation(.spring()) {
 			imageScale = 1
 			imageOffset = .zero
 		}
+	}
+	func currentPage() -> String {
+		pages[pageIndex - 1].imageName
 	}
 }
 
